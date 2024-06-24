@@ -52,3 +52,81 @@ async function fetchResult(applicationNumber, day, month, year) {
     return null;
   }
 }
+
+function parseHTML(htmlContent) {
+  const $ = cheerio.load(htmlContent);
+  const applicationNumber =
+    $('td:contains("Application No.")').next("td").text().trim() || "N/A";
+  const candidateName =
+    $('td:contains("Candidate’s Name")').next().text().trim() || "N/A";
+  const allIndiaRank =
+    $('td:contains("NEET All India Rank")').next("td").text().trim() || "N/A";
+  const marks =
+    $('td:contains("Total Marks Obtained (out of 720)")')
+      .first()
+      .next("td")
+      .text()
+      .trim() || "N/A";
+
+  if (allIndiaRank === "N/A") {
+    return null;
+  }
+  return {
+    applicationNumber,
+    candidateName,
+    allIndiaRank,
+    marks,
+  };
+}
+
+async function findResults(applicationNumber) {
+  let solved = false;
+  for (let year = 2007; year > 2003; year--) {
+    if (solved) {
+      break;
+    }
+    for (let month = 1; month <= 12; month++) {
+      if (solved) {
+        break;
+      }
+      const dataPromises: any = [];
+      console.log(
+        "Sending request for: " +
+          applicationNumber +
+          " year: " +
+          year +
+          " month: " +
+          month
+      );
+
+      for (let day = 1; day <= 31; day++) {
+        const data = fetchResult(
+          applicationNumber,
+          day.toString(),
+          month.toString(),
+          year.toString()
+        );
+        dataPromises.push(data);
+      }
+
+      const resolvedData = await Promise.all(dataPromises);
+      resolvedData.forEach((data) => {
+        if (data) {
+          console.log(data);
+          solved = true;
+        }
+      });
+    }
+  }
+}
+
+async function main() {
+  //   for (let appNumber = 240411345673; appNumber < 240411999999; appNumber++) {
+  //     await findResults(appNumber.toString());
+  //   }
+
+  const appNumber = 240411603427;
+  await findResults(appNumber.toString());
+}
+
+main();
